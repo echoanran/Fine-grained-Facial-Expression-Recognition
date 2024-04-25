@@ -402,10 +402,14 @@ class ExpMapping():
         exp_value_tops = np.array(exp_value_tops)
 
         cnt1, cnt2, cnt3 = 0, 0, 0
-        delta1, delta3= 0.14, 0.2
+        # delta1, delta3= 0.14, 0.2
+        # K = 5
+        # T1, T2, T3 = 15, 15, 300
+        # I1, I2, I3 = 0.3, 0.3, 0.25
+        delta1, delta3= 0.14, 0.1
         K = 5
-        T1, T2, T3 = 15, 15, 300
-        I1, I2, I3 = 0.3, 0.3, 0.25
+        T1, T2, T3 = 15, 30, 300
+        I1, I2, I3 = 0.25, 0.35, 0.25
         cur_first, cur_second = -1, -1
         label1, label2, label3 = np.ones(T) * -1, np.ones((2, T)) * -1, np.ones(T) * -1
         result1, result2, result3 = np.ones(T) * -1, np.ones(T) * -1, np.ones(T) * -1

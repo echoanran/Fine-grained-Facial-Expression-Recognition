@@ -116,16 +116,16 @@ def main(args,
         print(exp_preds.shape)
 
         if not is_draw:
-            fig = plt.figure(figsize=(30, 6), dpi=330)
-            T = min(args.max_frames, len(exp_preds))
-            for frame_idx in tqdm(range(1, T + 1)):
-                ExpMap.get_cumulated_exp(exp_preds[max(0, frame_idx - 250):frame_idx, :],
-                                         savepath=os.path.join(
-                                             savefolder, 'kde',
-                                             str(frame_idx).zfill(4) + '.png'),
-                                         fig=fig)
-                fig.clf()
-            plt.close('all')
+            # fig = plt.figure(figsize=(30, 6), dpi=330)
+            # T = min(args.max_frames, len(exp_preds))
+            # for frame_idx in tqdm(range(1, T + 1)):
+            #     ExpMap.get_cumulated_exp(exp_preds[max(0, frame_idx - 250):frame_idx, :],
+            #                              savepath=os.path.join(
+            #                                  savefolder, 'kde',
+            #                                  str(frame_idx).zfill(4) + '.png'),
+            #                              fig=fig)
+            #     fig.clf()
+            # plt.close('all')
             return exp_preds, exp_names, outpath
         else:
             ylim = [
@@ -307,9 +307,9 @@ if __name__ == "__main__":
 
     args = EasyDict()
 
-    args.savename = 'dragon'
+    args.savename = 'xgk3'
     args.mode = 'load'
-    args.videopath = 'resources/dragon_clean.avi'
+    args.videopath = 'resources/xgk3.mp4'
 
     args.sample_rate = 1
     args.max_frames = 3000
@@ -326,7 +326,7 @@ if __name__ == "__main__":
                                          is_reload=True,
                                          is_ending=False,
                                          renew_exp=True,
-                                         is_draw=False)
+                                         is_draw=True)
 
     vc = cv2.VideoCapture(outpath)
     fps = vc.get(cv2.CAP_PROP_FPS)
@@ -366,6 +366,7 @@ if __name__ == "__main__":
                      savepath=os.path.join(savefolder,
                                            'timing_diagram_topk3.png'))
 
+    analysis_draw = [0]
     draw_expfig_topk(exp_preds,
                      fps,
                      exp_names,
@@ -373,8 +374,33 @@ if __name__ == "__main__":
                      transparent=False,
                      ylim=ylim,
                      savepath=os.path.join(savefolder,
-                                           'timing_diagram_analysis.png'),
-                     analysis_results=analysis_results)
+                                           'timing_diagram_analysis_1.png'),
+                     analysis_results=analysis_results,
+                     analysis_draw=analysis_draw)
+    
+    analysis_draw = [1]
+    draw_expfig_topk(exp_preds,
+                     fps,
+                     exp_names,
+                     topk=3,
+                     transparent=False,
+                     ylim=ylim,
+                     savepath=os.path.join(savefolder,
+                                           'timing_diagram_analysis_2.png'),
+                     analysis_results=analysis_results,
+                     analysis_draw=analysis_draw)
+    
+    analysis_draw = [2]
+    draw_expfig_topk(exp_preds,
+                     fps,
+                     exp_names,
+                     topk=3,
+                     transparent=False,
+                     ylim=ylim,
+                     savepath=os.path.join(savefolder,
+                                           'timing_diagram_analysis_3.png'),
+                     analysis_results=analysis_results,
+                     analysis_draw=analysis_draw)
 
     neutral_thres = ExpMap.get_neutral_thres(exp_preds,
                                              savepath=os.path.join(

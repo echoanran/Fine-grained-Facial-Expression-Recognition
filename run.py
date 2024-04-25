@@ -259,6 +259,13 @@ def main(args,
             au_preds.append(au_pred)
             exp_preds.append(exp_pred)
 
+            print('=' * 10, 'AU Intensity Results', '=' * 10)
+            for name, pred in zip(au_names, au_pred):
+                print(name + ': ', np.round(pred * 5, 2))
+            print('=' * 10, 'Fine-grained Facial Expression Results', '=' * 10)
+            for name, pred in zip(exp_names, exp_pred):
+                print(name + ': ', np.round(pred, 2))
+
         out.write(img_show)
 
         if frame_idx >= args.max_frames:
@@ -301,7 +308,7 @@ if __name__ == "__main__":
 
     args = EasyDict()
 
-    args.savename = 'dragon'
+    args.savename = 'dragon_tmp'
     args.mode = 'load'
     args.videopath = 'resources/dragon_clean.avi'
 
