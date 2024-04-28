@@ -165,7 +165,7 @@ class AUDetection(object):
 
 if __name__ == "__main__":
 
-    resume = 'checkpoints/MCS13_repeat_balance_0.pt'  # disfa
+    resume = 'checkpoints/disfa_model.pt'
     model_args = {
         'num_class': 12,
         'backbone': 'resnet34',

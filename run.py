@@ -159,7 +159,7 @@ def main(args,
     else:
         os.makedirs(os.path.join(savefolder, 'detected_face'), exist_ok=True)
 
-        resume = './detection/checkpoints/MCS13_repeat_balance_0.pt'  # disfa
+        resume = './detection/checkpoints/disfa_model.pt'  # disfa
         model_args = {
             'num_class': 12,
             'backbone': 'resnet34',
@@ -169,7 +169,7 @@ def main(args,
         }
         AUDet = AUDetection(resume=resume, model_args=model_args)
 
-        resume_bp4d = './detection/checkpoints/MCS3_final_balance_model.pt'  # bp4d
+        resume_bp4d = './detection/checkpoints/bp4d_model.pt'  # bp4d
         model_args_bp4d = {
             'num_class': 5,
             'backbone': 'resnet34',
