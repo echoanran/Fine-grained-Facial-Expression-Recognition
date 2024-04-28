@@ -340,21 +340,12 @@ if __name__ == "__main__":
                       thres=0.0,
                       transparent=False,
                       savepath=os.path.join(savefolder,
-                                            'timing_diagram_thres_raw.png'))
+                                            'timing_diagram_smoothing.png'))
 
     ExpMap = ExpMapping(selected_exps=args.selected_exps)
     exp_names = ExpMap.get_expnames()
 
-    draw_expfig_thres(exp_preds,
-                      fps,
-                      exp_names,
-                      thres=0.0,
-                      transparent=False,
-                      savepath=os.path.join(savefolder,
-                                            'timing_diagram_thres0.0.png'))
-
     ylim = [np.round(exp_preds.min(), 1), np.round(exp_preds.max(), 1) + 0.1]
-
     analysis_results = ExpMap.automatic_analysis(exp_preds)
 
     draw_expfig_topk(exp_preds,
@@ -377,7 +368,7 @@ if __name__ == "__main__":
                                            'timing_diagram_analysis_1.png'),
                      analysis_results=analysis_results,
                      analysis_draw=analysis_draw)
-    
+
     analysis_draw = [1]
     draw_expfig_topk(exp_preds,
                      fps,
@@ -389,7 +380,7 @@ if __name__ == "__main__":
                                            'timing_diagram_analysis_2.png'),
                      analysis_results=analysis_results,
                      analysis_draw=analysis_draw)
-    
+
     analysis_draw = [2]
     draw_expfig_topk(exp_preds,
                      fps,

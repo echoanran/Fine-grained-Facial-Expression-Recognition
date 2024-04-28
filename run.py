@@ -16,7 +16,9 @@ from collections import Counter
 warnings.filterwarnings("ignore")
 
 import mediapipe
-faceDetector_m = mediapipe.solutions.face_mesh.FaceMesh(max_num_faces=1, refine_landmarks=True)
+
+faceDetector_m = mediapipe.solutions.face_mesh.FaceMesh(max_num_faces=1,
+                                                        refine_landmarks=True)
 
 
 def set_seed(seed):
@@ -103,11 +105,15 @@ def main(args,
                 exp_pred, exp_names = ExpMap.forward(np.array(au_pred))
                 exp_preds.append(exp_pred)
             exp_preds = np.array(exp_preds)
-            neutral_thres = ExpMap.get_neutral_thres(exp_preds, savepath=os.path.join(savefolder, 'kde.png'))
+            neutral_thres = ExpMap.get_neutral_thres(exp_preds,
+                                                     savepath=os.path.join(
+                                                         savefolder,
+                                                         'kde.png'))
             print(neutral_thres)
             exp_preds = []
             for au_pred in au_preds:
-                exp_pred, exp_names = ExpMap.forward(np.array(au_pred), neutral_thres)
+                exp_pred, exp_names = ExpMap.forward(np.array(au_pred),
+                                                     neutral_thres)
                 exp_preds.append(exp_pred)
             exp_preds = ExpMap.global_smoothing(exp_preds)
         else:
@@ -125,16 +131,16 @@ def main(args,
             for frame_idx in tqdm(range(1, T + 1)):
                 if args.is_topk:
                     draw_expfig_topk(exp_preds[:frame_idx, :],
-                                    fps,
-                                    exp_names,
-                                    T=T,
-                                    topk=args.topk,
-                                    transparent=True,
-                                    ylim=ylim,
-                                    savepath=os.path.join(
-                                        savefolder, 'timing_diagram',
-                                        str(frame_idx).zfill(4) + '.png'),
-                                    fig=fig)
+                                     fps,
+                                     exp_names,
+                                     T=T,
+                                     topk=args.topk,
+                                     transparent=True,
+                                     ylim=ylim,
+                                     savepath=os.path.join(
+                                         savefolder, 'timing_diagram',
+                                         str(frame_idx).zfill(4) + '.png'),
+                                     fig=fig)
                 else:
                     draw_expfig_thres(exp_preds[:frame_idx, :],
                                       fps,
@@ -149,7 +155,7 @@ def main(args,
                 fig.clf()
             plt.close('all')
             # pass
-            
+
     else:
         os.makedirs(os.path.join(savefolder, 'detected_face'), exist_ok=True)
 
@@ -177,7 +183,7 @@ def main(args,
 
     frame_idx = 0
     exp_tops = []
-    all_weights = np.array([1/2, 1/4, 1/8, 1/16, 1/32])
+    all_weights = np.array([1 / 2, 1 / 4, 1 / 8, 1 / 16, 1 / 32])
     weights = all_weights[:args.topk] / sum(all_weights[:args.topk])
     exp_preds_cum = []
     ending_image = None
@@ -221,19 +227,23 @@ def main(args,
 
         if is_reload:
             # get cumulated exp
-            sorted_all = sorted(enumerate(exp_pred), key=lambda x: x[1], reverse=True)
+            sorted_all = sorted(enumerate(exp_pred),
+                                key=lambda x: x[1],
+                                reverse=True)
             sorted_idx = [x[0] for x in sorted_all]
             topk_idxs = sorted_idx[:args.topk]
             exp_pred_new = exp_pred.copy()
             exp_pred_new[exp_pred_new < neutral_thres] = 0
             exp_pred_new[exp_pred_new >= neutral_thres] = 1
-            for c in range(len(exp_names)): 
+            for c in range(len(exp_names)):
                 if c in topk_idxs and c != len(exp_names) - 1:
                     exp_pred_new[c] = weights[topk_idxs.index(c)]
                 else:
                     exp_pred_new[c] = 0
             exp_preds_cum.append(exp_pred_new)
-            exp_final = np.argmax(np.sum(exp_preds_cum[max(0, frame_idx - 1 - 250): frame_idx], 0))
+            exp_final = np.argmax(
+                np.sum(exp_preds_cum[max(0, frame_idx - 1 - 250):frame_idx],
+                       0))
 
             img_show = webcam_image.copy()
             img_show = draw(img_show,
@@ -249,8 +259,6 @@ def main(args,
                             is_topk=args.is_topk)
         else:
             img_show = webcam_image.copy()
-            
-            # img_show = AUDet.get_img()
             face = AUDet.get_face_img()
             if face is not None:
                 cv2.imwrite(
@@ -259,12 +267,14 @@ def main(args,
             au_preds.append(au_pred)
             exp_preds.append(exp_pred)
 
-            print('=' * 10, 'AU Intensity Results', '=' * 10)
-            for name, pred in zip(au_names, au_pred):
-                print(name + ': ', np.round(pred * 5, 2))
-            print('=' * 10, 'Fine-grained Facial Expression Results', '=' * 10)
-            for name, pred in zip(exp_names, exp_pred):
-                print(name + ': ', np.round(pred, 2))
+            if args.print_log:
+                print('=' * 10, 'AU Intensity Results', '=' * 10)
+                for name, pred in zip(au_names, au_pred):
+                    print(name + ': ', np.round(pred * 5, 2))
+                print('=' * 10, 'Fine-grained Facial Expression Results',
+                      '=' * 10)
+                for name, pred in zip(exp_names, exp_pred):
+                    print(name + ': ', np.round(pred, 2))
 
         out.write(img_show)
 
@@ -276,7 +286,25 @@ def main(args,
 
     if not is_reload:
         np.save(os.path.join(savefolder, 'au_preds.npy'), au_preds)
+
+        draw_expfig_thres(exp_preds,
+                          fps,
+                          exp_names,
+                          thres=0.0,
+                          transparent=False,
+                          savepath=os.path.join(savefolder,
+                                                'timing_diagram_raw.png'))
+
         exp_preds = ExpMap.global_smoothing(exp_preds)
+
+        draw_expfig_thres(exp_preds,
+                          fps,
+                          exp_names,
+                          thres=0.0,
+                          transparent=False,
+                          savepath=os.path.join(
+                              savefolder, 'timing_diagram_smoothing.png'))
+
         np.save(os.path.join(savefolder, 'exp_preds.npy'), exp_preds)
 
     if is_ending:
@@ -311,6 +339,7 @@ if __name__ == "__main__":
     args.savename = 'dragon_tmp'
     args.mode = 'load'
     args.videopath = 'resources/dragon_clean.avi'
+    args.print_log = False
 
     args.sample_rate = 1
     args.max_frames = 3000
@@ -340,27 +369,10 @@ if __name__ == "__main__":
     fps = vc.get(cv2.CAP_PROP_FPS)
     savefolder = os.path.join('./save', args.savename)
 
-    draw_expfig_thres(exp_preds,
-                      fps,
-                      exp_names,
-                      thres=0.0,
-                      transparent=False,
-                      savepath=os.path.join(savefolder,
-                                            'timing_diagram_thres_raw.png'))
-
     ExpMap = ExpMapping(selected_exps=args.selected_exps)
     exp_names = ExpMap.get_expnames()
 
-    draw_expfig_thres(exp_preds,
-                      fps,
-                      exp_names,
-                      thres=0.0,
-                      transparent=False,
-                      savepath=os.path.join(savefolder,
-                                            'timing_diagram_thres0.0.png'))
-
     ylim = [np.round(exp_preds.min(), 1), np.round(exp_preds.max(), 1) + 0.1]
-    
     analysis_results = ExpMap.automatic_analysis(exp_preds)
 
     draw_expfig_topk(exp_preds,
@@ -372,6 +384,7 @@ if __name__ == "__main__":
                      savepath=os.path.join(savefolder,
                                            'timing_diagram_topk3.png'))
 
+    analysis_draw = [0]
     draw_expfig_topk(exp_preds,
                      fps,
                      exp_names,
@@ -379,38 +392,71 @@ if __name__ == "__main__":
                      transparent=False,
                      ylim=ylim,
                      savepath=os.path.join(savefolder,
-                                           'timing_diagram_analysis.png'),
-                     analysis_results=analysis_results)
+                                           'timing_diagram_analysis_1.png'),
+                     analysis_results=analysis_results,
+                     analysis_draw=analysis_draw)
 
-    neutral_thres = ExpMap.get_neutral_thres(exp_preds, savepath=os.path.join(savefolder, 'kde.png'))
-    
-    exp_preds[exp_preds <= neutral_thres] = 0
-    exp_preds[exp_preds > neutral_thres] = 1
+    analysis_draw = [1]
+    draw_expfig_topk(exp_preds,
+                     fps,
+                     exp_names,
+                     topk=3,
+                     transparent=False,
+                     ylim=ylim,
+                     savepath=os.path.join(savefolder,
+                                           'timing_diagram_analysis_2.png'),
+                     analysis_results=analysis_results,
+                     analysis_draw=analysis_draw)
+
+    analysis_draw = [2]
+    draw_expfig_topk(exp_preds,
+                     fps,
+                     exp_names,
+                     topk=3,
+                     transparent=False,
+                     ylim=ylim,
+                     savepath=os.path.join(savefolder,
+                                           'timing_diagram_analysis_3.png'),
+                     analysis_results=analysis_results,
+                     analysis_draw=analysis_draw)
+
+    neutral_thres = ExpMap.get_neutral_thres(exp_preds,
+                                             savepath=os.path.join(
+                                                 savefolder, 'kde.png'))
+    ExpMap.get_cumulated_exp(exp_preds,
+                             savepath=os.path.join(savefolder, 'kde.png'))
+
+    exp_preds[exp_preds < neutral_thres] = 0
+    exp_preds[exp_preds >= neutral_thres] = 1
 
     exp_topk = []
     sorted_idxs = []
     for i in range(len(exp_preds)):
-        sorted_all = sorted(enumerate(exp_preds[i]), key=lambda x: x[1], reverse=True)
+        sorted_all = sorted(enumerate(exp_preds[i]),
+                            key=lambda x: x[1],
+                            reverse=True)
         sorted_idxs.append([x[0] for x in sorted_all])
 
-    weights = np.array([1/2, 1/4, 1/8, 1/16, 1/32, 1/64, 1/128])
+    weights = np.array([1 / 2, 1 / 4, 1 / 8, 1 / 16, 1 / 32, 1 / 64, 1 / 128])
     weights = weights[:args.topk] / sum(weights[:args.topk])
+    print(weights)
 
     for i in range(len(exp_preds)):
         topk_idxs = sorted_idxs[i][:args.topk]
-        for c in range(len(exp_names)): 
+        for c in range(len(exp_names)):
             if c in topk_idxs and c != len(exp_names) - 1:
                 exp_preds[i][c] = weights[topk_idxs.index(c)]
             else:
                 exp_preds[i][c] = 0
-        
+
     exp_preds_new = []
     for i in range(len(exp_preds)):
-        exp_preds_new.append(np.sum(exp_preds[max(0, i - 250): i + 1], 0))
+        exp_preds_new.append(np.sum(exp_preds[max(0, i - 250):i + 1], 0))
     exp_preds_new = np.array(exp_preds_new)
 
-    draw_expfig_max(exp_preds_new,
-                    fps,
-                    exp_names,
-                    savepath=os.path.join(savefolder, 'exp_tops.png'),
-                    )
+    draw_expfig_max(
+        exp_preds_new,
+        fps,
+        exp_names,
+        savepath=os.path.join(savefolder, 'exp_tops.png'),
+    )

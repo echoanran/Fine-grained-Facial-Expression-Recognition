@@ -6,67 +6,68 @@ import scipy
 
 
 class ExpMapping():
-    def __init__(self, selected_exps):
-        self.neutral_name = 'peaceful       中性'
+    def __init__(self, selected_exps, language='bi'):
+        if language == 'bi':
+            self.neutral_name = 'peaceful       中性'
+            # region arguments yapf: disable
+            self.exp_names = {
+                0: 'happy          愉快',
+                1: 'sad            难过',
+                2: 'fearful        恐惧',
+                3: 'angry          生气',
+                4: 'surprised      惊讶',
+                5: 'disgusted      厌恶',
+                6: 'contempt       轻蔑',
+                23:'belligerent    好战',
+                24:'domineering    专横',
+                26:'threatening    威胁',
+                27:'whined         哀诉',
+                28:'awed           敬畏',
+                29:'hated          憎恶',
+                30:'painful        痛苦',
+                31:'peaceful       中性',
+            }
+            # endregion yapf: enable
+        else:
+            self.neutral_name = 'peaceful'
+            # region arguments yapf: disable
+            self.exp_names = {
+                0: 'happy',
+                1: 'sad',
+                2: 'fearful',
+                3: 'angry',
+                4: 'surprised',
+                5: 'disgusted',
+                6: 'contempt',
 
-        # # region arguments yapf: disable
-        # self.exp_names = {
-        #     0: 'happy',
-        #     1: 'sad',
-        #     2: 'fearful',
-        #     3: 'angry',
-        #     4: 'surprised',
-        #     5: 'disgusted',
-        #     6: 'contempt',
+                7: 'happily surprised',
+                8: 'happily disgusted',
+                9: 'sadly fearful',
+                10: 'sadly angry',
+                11: 'sadly surprised',
+                12: 'sadly disgusted',
+                13: 'fearfully angry',
+                14: 'fearfully surprised',
+                15: 'fearfully disgusted',
+                16: 'angrily surprised',
+                17: 'angrily disgusted',
+                18: 'disgustedly surprised',
 
-        #     7: 'happily surprised',
-        #     8: 'happily disgusted',
-        #     9: 'sadly fearful',
-        #     10: 'sadly angry',
-        #     11: 'sadly surprised',
-        #     12: 'sadly disgusted',
-        #     13: 'fearfully angry',
-        #     14: 'fearfully surprised',
-        #     15: 'fearfully disgusted',
-        #     16: 'angrily surprised',
-        #     17: 'angrily disgusted',
-        #     18: 'disgustedly surprised',
-
-        #     19: 'enthusiastic',
-        #     20: 'humorous',
-        #     21: 'interested',
-        #     22: 'affirmative',
-        #     23: 'belligerent',
-        #     24: 'domineering',
-        #     25: 'defensive',
-        #     26: 'threatened',
-        #     27: 'whined',
-        #     28: 'awed',
-        #     29: 'hated',
-        #     30: 'painful',
-        #     31: 'peaceful',
-        # }
-        # # endregion yapf: enable
-
-        # region arguments yapf: disable
-        self.exp_names = {
-            0: 'happy          愉快',
-            1: 'sad            难过',
-            2: 'fearful        恐惧',
-            3: 'angry          生气',
-            4: 'surprised      惊讶',
-            5: 'disgusted      厌恶',
-            6: 'contempt       轻蔑',
-            23:'belligerent    好战',
-            24:'domineering    专横',
-            26:'threatening    威胁',
-            27:'whined         哀诉',
-            28:'awed           敬畏',
-            29:'hated          憎恶',
-            30:'painful        痛苦',
-            31:'peaceful       中性',
-        }
-        # endregion yapf: enable
+                19: 'enthusiastic',
+                20: 'humorous',
+                21: 'interested',
+                22: 'affirmative',
+                23: 'belligerent',
+                24: 'domineering',
+                25: 'defensive',
+                26: 'threatened',
+                27: 'whined',
+                28: 'awed',
+                29: 'hated',
+                30: 'painful',
+                31: 'peaceful',
+            }
+            # endregion yapf: enable
 
         # region arguments yapf: disable
         self.ausets = {
@@ -286,31 +287,11 @@ class ExpMapping():
         return exp_prob
 
     def global_smoothing(self, exp_preds):
-        self.selected_tree_nodes.append(self.tree_nodes[31])
-        P = np.eye(len(self.selected_exp_names) + 1) + np.ones(len(self.selected_exp_names) + 1) * 0.01
-
-        for i in range(len(self.selected_exp_names) + 1):
-            for j in range(len(self.selected_exp_names) + 1):
-                if i == j:
-                    continue
-                if abs(self.selected_tree_nodes[i][0] - self.selected_tree_nodes[j][0]) == 0:
-                    P[i][j] = 0.3
-                    P[j][i] = 0.3
-                elif abs(self.selected_tree_nodes[i][0] - self.selected_tree_nodes[j][0]) == 1:
-                    P[i][j] = 0.1
-                    P[j][i] = 0.1
-
-        ss = P.sum(axis=1)
-        for i in range(len(P)):
-            P[i] = P[i] / ss[i]
-
         exp_preds_global = []
         for exp_pred in exp_preds:
             if not exp_preds_global:
                 exp_preds_global.append(exp_pred)
             else:
-                exp_last = np.matmul(exp_preds_global[-1], P.T)
-                # exp_update = 0.5 * exp_last + 0.5 * exp_pred
                 exp_update = np.array(exp_preds_global[-1]) * 0.7 + 0.3 * exp_pred
                 exp_preds_global.append(exp_update.tolist())
 
@@ -382,8 +363,8 @@ class ExpMapping():
                 labelsize=18,
             )
 
-        # plt.savefig(savepath.replace('kde', 'kde_' + self.get_expnames()[c].split(' ')[0]))
-        plt.savefig(savepath)
+            plt.savefig(savepath.replace('kde', 'kde_' + self.get_expnames()[c].split(' ')[0]))
+      
         return
 
     def automatic_analysis(self, exp_preds):

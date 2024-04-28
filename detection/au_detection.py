@@ -1,13 +1,12 @@
 import os
 import cv2
 import torch
-import time
 import random
 import math
 import numpy as np
 
-import mediapipe
 from detection.model.regression import Model
+from detection.face_detection import FaceDetection
 from detection.closed_eye_detection import EyeDetection
 
 
@@ -23,8 +22,6 @@ class AUDetection(object):
     def __init__(self, resume, model_args):
 
         set_seed(2024)
-        self.faceDetector_m = mediapipe.solutions.face_mesh.FaceMesh(
-            max_num_faces=1, refine_landmarks=True)
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
         self.model = Model(**model_args).to(self.device)
@@ -33,7 +30,8 @@ class AUDetection(object):
         self.model.load_state_dict(checkpoint)
         self.model.eval()
 
-        self.eye_detect = EyeDetection()
+        self.face_detector = FaceDetection()
+        self.eye_detector = EyeDetection()
 
         self.aulist = []
         self.num_class = model_args['num_class']
@@ -42,47 +40,6 @@ class AUDetection(object):
         else:
             self.aulist = [6, 10, 12, 14, 17]
         self.au_names = ['AU' + str(au) for au in self.aulist]
-
-    def get_face(self, image, resize=(256, 256)):
-        face_infos_m = self.faceDetector_m.process(image)
-
-        if face_infos_m.multi_face_landmarks == None:
-            return None, None, None
-
-        for prediction in face_infos_m.multi_face_landmarks:
-            pts = np.array([(pt.x * image.shape[1], pt.y * image.shape[0])
-                            for pt in prediction.landmark],
-                           dtype=np.float64)
-            bbox = np.vstack([pts.min(axis=0), pts.max(axis=0)])
-
-            # # square
-            # bbox_center = [bbox[:][1].mean(), bbox[:][0].mean()]
-            # bbox_half_length = max(bbox[1][1] - bbox[0][1],
-            #                        bbox[1][0] - bbox[0][0]) // 2
-            # bbox_float = [
-            #     bbox_center[0] - bbox_half_length,
-            #     bbox_center[0] + bbox_half_length,
-            #     bbox_center[1] - bbox_half_length,
-            #     bbox_center[1] + bbox_half_length
-            # ]
-
-            bbox_int = np.round(bbox).astype(np.int32)
-            break
-
-        cutted_faces = [
-            image[bbox_int[0][1]:bbox_int[1][1], bbox_int[0][0]:bbox_int[1][0]]
-        ]
-        faces_coordinates = [
-            bbox_int[0][0], bbox_int[0][1], bbox_int[1][0], bbox_int[1][1]
-        ]
-        normalized_faces = [
-            cv2.resize(face, resize) for face in cutted_faces
-            if face.shape[0] != 0 and face.shape[1] != 0
-        ]
-
-        if not normalized_faces:
-            return None, None, None
-        return normalized_faces[0], faces_coordinates, pts
 
     def transfer(self, x, y, RotationMatrix):
 
@@ -151,7 +108,6 @@ class AUDetection(object):
         return cropimg, np.array(crop_landmarks)
 
     def run(self, frame, face=None, frame_idx=0):
-        start_time = time.time()
         self.is_eye_open = -1
         self.face = None
         self.img_show = frame.copy()
@@ -159,36 +115,31 @@ class AUDetection(object):
         if face is not None:
             pass
         else:
-            face, face_coordinates, landmarks = self.get_face(frame)
-            getface_time = time.time()
-
+            face, face_coordinates, landmarks = self.face_detector.get_face(frame)
+            
             if face is None:
                 print("Failed to detect face in frame: {}".format(frame_idx))
                 self.au_pred = [0.0] * self.num_class
                 return self.au_pred + [-1], self.au_names + ['AU43']
 
             if landmarks is not None:
-                left_eye, right_eye, ear, is_eye_open = self.eye_detect.get_eye_state(
+                left_eye, right_eye, ear, is_eye_open = self.eye_detector.get_eye_state(
                     landmarks)
                 self.is_eye_open = float(is_eye_open)
 
-                chosen_left_eye_idxs = [362, 385, 387, 263, 373, 380]
-                chosen_right_eye_idxs = [33, 160, 158, 133, 153, 144]
+                # for checking
+                # all_idxs = self.eye_detector.chosen_left_eye_idxs + self.eye_detector.chosen_right_eye_idxs
+                # for idx in all_idxs:
+                #     cv2.circle(
+                #         self.img_show,
+                #         (int(landmarks[idx][0]), int(landmarks[idx][1])), 2,
+                #         (0, 0, 255))
 
-                all_idxs = chosen_left_eye_idxs + chosen_right_eye_idxs
-
-                for idx in all_idxs:
-                    cv2.circle(
-                        self.img_show,
-                        (int(landmarks[idx][0]), int(landmarks[idx][1])), 2,
-                        (0, 0, 255))
-                    
-            geteye_time = time.time()
-
-            cv2.rectangle(self.img_show,
-                          (face_coordinates[0], face_coordinates[1]),
-                          (face_coordinates[2], face_coordinates[3]),
-                          (0, 255, 0), 2)
+            # for checking
+            # cv2.rectangle(self.img_show,
+            #               (face_coordinates[0], face_coordinates[1]),
+            #               (face_coordinates[2], face_coordinates[3]),
+            #               (0, 255, 0), 2)
         
         self.face = face.copy()
         if torch.cuda.is_available():
@@ -202,11 +153,7 @@ class AUDetection(object):
             au_pred = self.model(face)
         au_pred = au_pred.squeeze().data.cpu().numpy()
         self.au_pred = np.clip(au_pred, 0, 1).tolist()
-        getpred_time = time.time()
-
-        # print("getface time: {:.2f}, geteye time: {:.2f}, pred time: {:.2f}".
-        #       format(getface_time - start_time, geteye_time - getface_time,
-        #              getpred_time - geteye_time))
+       
         return self.au_pred + [self.is_eye_open], self.au_names + ['AU43']
 
     def get_img(self):
